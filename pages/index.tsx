@@ -1,27 +1,23 @@
 import { GetStaticProps } from "next";
 import { useKeenSlider } from "keen-slider/react";
-import useSWR, { Key, Fetcher } from "swr";
+import useSWR from "swr";
 import "keen-slider/keen-slider.min.css";
-import TopicsSlider, { Topics } from "../components/Topics";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 
-const topics = [
-  { title: "Wallpapers", slug: "wallpapers" },
-  { title: "3D Renders", slug: "3d-renders" },
-  { title: "Travel", slug: "travel" },
-  { title: "Nature", slug: "nature" },
-  { title: "Street Photography", slug: "street-photography" },
-  { title: "Experimental", slug: "experimental" },
-  { title: "Textures & Patterns", slug: "textures-patterns" },
-  { title: "Animals", slug: "animals" },
-  { title: "Architecture & Interiors", slug: "architecture-interiors" },
-  { title: "Fashion & Beauty", slug: "fashion-beauty" },
-];
+interface ImageProps {
+  id: string;
+  urls: { regular: string; small: string };
+  alt_description: string;
+  width: number;
+  height: number;
+  user: { links: { html: string }; name: string };
+}
 
-export default function Home() {
+export default function Home({ topics }: { topics: { title: string }[] }) {
   const [selectedTopic, setSelectedTopic] = useState("wallpapers");
-  const [selectedImage, setSelectImage] = useState<any[]>([]);
+  const [selectedImage, setSelectImage] = useState<ImageProps>();
+  const [open, setOpen] = useState(false);
 
   const fetcher = async () => {
     const response = await fetch(
@@ -33,10 +29,6 @@ export default function Home() {
 
   const { data, error, isLoading } = useSWR(selectedTopic, fetcher);
 
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
-
   const [ref] = useKeenSlider<HTMLDivElement>({
     slides: {
       perView: 6,
@@ -45,6 +37,69 @@ export default function Home() {
   });
   return (
     <>
+      {open && (
+        <div
+          id="popup-modal"
+          tabIndex={-1}
+          className={`fixed top-0 left-0 right-0 z-50 p-4 overflow-x-hidden overflow-y-auto md:inset-0 container mx-auto w-full h-full ${
+            open ? "block" : "hidden"
+          }`}
+        >
+          <div className="relative w-full h-[90vh] flex justify-center items-center">
+            <div className="relative rounded-lg shadow bg-zinc-800 bg-opacity-70">
+              <button
+                type="button"
+                className="absolute top-3 right-2.5 text-zinc-50 bg-transparent transition-all hover:text-zinc-400 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center "
+                data-modal-toggle="popup-modal"
+                onClick={() => {
+                  setOpen(!open);
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  ></path>
+                </svg>
+                <span className="sr-only">Close modal</span>
+              </button>
+              <div className="p-10 pt-12 text-center h-[90vh]">
+                {selectedImage != undefined && (
+                  <>
+                    <Image
+                      src={selectedImage.urls.regular}
+                      alt={selectedImage.alt_description}
+                      width={selectedImage.width}
+                      height={selectedImage.height}
+                      className="object-cover h-full"
+                    />
+                    <div className="flex space-x-4">
+                      <p>Author: </p>
+                      <p>
+                        <a
+                          href={selectedImage.user.links.html}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {selectedImage.user.name}
+                        </a>
+                      </p>
+                    </div>{" "}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         ref={ref}
         className="keen-slider p-4 border-t border-b border-zinc-500"
@@ -64,7 +119,7 @@ export default function Home() {
                   <span
                     className="hover:text-zinc-300 cursor-pointer"
                     onClick={() => {
-                      setSelectedTopic(topic.slug);
+                      setSelectedTopic(topic.title);
                     }}
                   >
                     {topic.title}
@@ -89,35 +144,40 @@ export default function Home() {
                 </div>
               );
             })
-          : data.map(
-              (image: {
-                id: string;
-                urls: { small: string };
-                alt_description: string;
-                width: number;
-                height: number;
-              }) => {
-                return (
-                  <div
-                    key={image.id}
-                    className="relative h-64 object-cover rounded-sm"
-                  >
-                    <Image
-                      src={image.urls.small}
-                      alt={image.alt_description}
-                      width={image.width}
-                      height={image.height}
-                      className="object-cover h-full"
-                    />
-                  </div>
-                );
-              }
-            )}
+          : data.map((image: ImageProps) => {
+              return (
+                <div
+                  key={image.id}
+                  className="relative h-64 object-cover rounded-sm cursor-pointer"
+                  onClick={() => {
+                    setSelectImage(image);
+                    setOpen(!open);
+                  }}
+                >
+                  <Image
+                    src={image.urls.small}
+                    alt={image.alt_description}
+                    width={image.width}
+                    height={image.height}
+                    className="object-cover h-full"
+                  />
+                </div>
+              );
+            })}
         {}
       </section>
     </>
   );
 }
+
+interface Topics {
+  topics: Topic[];
+}
+
+type Topic = {
+  title: string;
+  slug: string;
+};
 
 export const getStaticProps: GetStaticProps<{ topics: Topics[] }> = async (
   context
