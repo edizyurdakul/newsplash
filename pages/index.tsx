@@ -18,6 +18,7 @@ export default function Home({ topics }: { topics: { title: string }[] }) {
   const [selectedTopic, setSelectedTopic] = useState("wallpapers");
   const [selectedImage, setSelectImage] = useState<ImageProps>();
   const [open, setOpen] = useState(false);
+  const [zoom, setZoom] = useState(false);
 
   const fetcher = async () => {
     const response = await fetch(
@@ -40,12 +41,11 @@ export default function Home({ topics }: { topics: { title: string }[] }) {
       {open && (
         <div
           id="popup-modal"
-          tabIndex={-1}
           className={`fixed top-0 left-0 right-0 z-50 p-4 overflow-x-hidden overflow-y-auto md:inset-0 container mx-auto w-full h-full ${
             open ? "block" : "hidden"
           }`}
         >
-          <div className="relative w-full h-[90vh] flex justify-center items-center">
+          <div className="relative w-full h-full flex justify-center items-center">
             <div className="relative rounded-lg shadow bg-zinc-800 bg-opacity-70">
               <button
                 type="button"
@@ -70,7 +70,7 @@ export default function Home({ topics }: { topics: { title: string }[] }) {
                 </svg>
                 <span className="sr-only">Close modal</span>
               </button>
-              <div className="p-10 pt-12 text-center h-[90vh]">
+              <div className="p-10 pt-12 text-center">
                 {selectedImage != undefined && (
                   <>
                     <Image
@@ -78,7 +78,14 @@ export default function Home({ topics }: { topics: { title: string }[] }) {
                       alt={selectedImage.alt_description}
                       width={selectedImage.width}
                       height={selectedImage.height}
-                      className="object-cover h-full"
+                      className={`object-cover  ${
+                        zoom
+                          ? "h-full cursor-zoom-out"
+                          : "max-h-[80vh] cursor-zoom-in"
+                      } `}
+                      onClick={() => {
+                        setZoom(!zoom);
+                      }}
                     />
                     <div className="flex space-x-4">
                       <p>Author: </p>
@@ -91,7 +98,7 @@ export default function Home({ topics }: { topics: { title: string }[] }) {
                           {selectedImage.user.name}
                         </a>
                       </p>
-                    </div>{" "}
+                    </div>
                   </>
                 )}
               </div>
